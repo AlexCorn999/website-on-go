@@ -1,54 +1,75 @@
 package render
 
 import (
-	"fmt"
+	"bytes"
 	"html/template"
 	"log"
 	"net/http"
+	"path/filepath"
+
+	"github.com/AlexCorn999/website-on-go/pkg/config"
 )
 
-var tc = make(map[string]*template.Template)
+var app *config.AppConfig
 
-func RenderTemplate(w http.ResponseWriter, t string) {
-	var tmpl *template.Template
-	var err error
+// New Templates sets the config for the template package
+func NewTemplates(a *config.AppConfig) {
+	app = a
+}
 
-	// check to see if we already have the template in our cache
-	_, inMap := tc[t]
-	if !inMap {
-		// need to create the template
-		log.Println("creating template and adding to cache")
-		err = createTemplateCache(t)
-		if err != nil {
-			log.Println(err)
-		}
-	} else {
-		// we have the template in the cache
-		log.Println("using cached template")
+// Render template renders a template
+func RenderTemplate(w http.ResponseWriter, html string) {
+	// get the template cache from the app config
+	tc := app.TemplateCache
+
+	// get requested template from cache
+	t, ok := tc[html]
+	if !ok {
+		log.Fatal("Could not get template from template cache")
 	}
 
-	tmpl = tc[t]
+	buf := new(bytes.Buffer)
 
-	err = tmpl.Execute(w, nil)
+	_ = t.Execute(buf, nil)
+
+	// render the template
+	_, err := buf.WriteTo(w)
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func createTemplateCache(t string) error {
-	templates := []string{
-		fmt.Sprintf("../../templates/%s", t),
-		"../../templates/base.layout.html",
-	}
+func CreateTemplateCache() (map[string]*template.Template, error) {
+	myCache := map[string]*template.Template{}
 
-	//parse the template
-	tmpl, err := template.ParseFiles(templates...)
+	// get all of the files named *.page.html from /templates
+	pages, err := filepath.Glob("../../templates/*.page.html")
 	if err != nil {
-		return err
+		return myCache, err
 	}
 
-	// add template to cache (map)
-	tc[t] = tmpl
+	// range through all files ending with *.page.html
+	for _, page := range pages {
+		name := filepath.Base(page)
+		ts, err := template.New(name).ParseFiles(page)
+		if err != nil {
+			return myCache, err
+		}
 
-	return nil
+		matches, err := filepath.Glob("../../templates/*.layout.html")
+		if err != nil {
+			return myCache, err
+		}
+
+		if len(matches) > 0 {
+			ts, err = ts.ParseGlob("../../templates/*.layout.html")
+			if err != nil {
+				return myCache, err
+			}
+		}
+
+		myCache[name] = ts
+	}
+
+	return myCache, nil
 }

@@ -7,6 +7,18 @@ import (
 	"github.com/AlexCorn999/website-on-go/pkg/render"
 )
 
+// TemplateData holds data sent from handlers to templates
+type TemplateData struct {
+	StringMap map[string]string
+	IntMap    map[int]int
+	FloatMap  map[string]float32
+	Data      map[string]interface{}
+	CSRFToken string
+	Flash     string
+	Warning   string
+	Error     string
+}
+
 // Repo the reposytory used by the handlers
 var Repo *Repository
 
@@ -29,11 +41,14 @@ func NewHandlers(r *Repository) {
 
 // Home is the home page handler
 func (m *Repository) Home(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, "home.page.html")
+	render.RenderTemplate(w, "home.page.html", &TemplateData{})
 
 }
 
 // About is the about page of handler
 func (m *Repository) About(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, "about.page.html")
+	// perform some logic
+
+	// send the data to the template
+	render.RenderTemplate(w, "about.page.html", &TemplateData{})
 }

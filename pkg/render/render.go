@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/AlexCorn999/website-on-go/pkg/config"
+	"github.com/AlexCorn999/website-on-go/pkg/handlers"
 )
 
 var app *config.AppConfig
@@ -18,7 +19,7 @@ func NewTemplates(a *config.AppConfig) {
 }
 
 // Render template renders a template
-func RenderTemplate(w http.ResponseWriter, html string) {
+func RenderTemplate(w http.ResponseWriter, html string, td *handlers.TemplateData) {
 	var tc map[string]*template.Template
 
 	if app.UseCache {
